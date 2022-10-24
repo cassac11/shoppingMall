@@ -8,6 +8,7 @@ import shoppingmall.entity.MemberUser;
 import shoppingmall.key.MemberKey;
 import shoppingmall.repository.MemberRepository;
 import shoppingmall.utils.BusinessLayerResponse;
+import shoppingmall.utils.CommUtils;
 import shoppingmall.utils.EnDecoderUtil;
 import shoppingmall.vo.MemberLogin;
 import shoppingmall.vo.MemberRegisterVO;
@@ -36,6 +37,11 @@ public class MemberService {
     public MemberUser saveFlush(MemberUser memberUser)
     {
         return memberRepository.saveAndFlush(memberUser);
+    }
+
+    public MemberUser save(MemberUser memberUser)
+    {
+        return memberRepository.save(memberUser);
     }
     
     // 用戶註冊
@@ -129,6 +135,7 @@ public class MemberService {
         }
     }
     
+    // 用戶登入
     public BusinessLayerResponse<String> login(HttpServletRequest request, MemberLogin memberLogin)
     {
         // 帳號登出
@@ -151,6 +158,96 @@ public class MemberService {
             log.info("MemberService ==> login ... 會員登入失敗：未輸入帳號");
             
             return BusinessLayerResponse.error("登入失敗!");
+        }
+        
+        if (!member.getEnable())
+        {
+            return BusinessLayerResponse.error("會員已被停用！");
+        }
+        
+        int lockCount = member.getLockCount() == null ? 0 : member.getLockCount();
+        boolean isLock = member.getLockType() != null && member.getLockType();
+        
+        if (lockCount >= 3)
+        {
+            member.setTempLockTime(System.currentTimeMillis());
+            save(member);
+        }
+        
+        if (lockCount >= 3 && System.currentTimeMillis() - member.getTempLockTime() < 180000L && isLock)
+        {
+            log.info("MemberService ==> login ... [ " + member.getKey().getMember() + ": 鎖帳3分鐘 ]");
+            member.setLockType(false);
+            save(member);
+            
+            return BusinessLayerResponse.error("鎖帳3分鐘!");
+        }
+        
+        if (!EnDecoderUtil.md5Encrypt(memberLogin.getPassword()).equals(member.getPassword()))
+        {
+            member.setLockCount(lockCount + 1);
+            member.setLockType(true);
+            save(member);
+
+            return BusinessLayerResponse.error("帳號密碼錯誤!");
+        }
+        
+        String clientIP = CommUtils.getClientIP(request);
+        
+        try 
+        {
+            if (vToken != null)
+            {
+                log.info("MemberService ==> login ... [ " + member.getKey().getMember() + " : 登入成功 ]");
+                
+                return BusinessLayerResponse.ok(vToken);
+            }
+            else
+            {
+                member.setLastLoginIP(clientIP);
+                member.setLastLoginTime(System.currentTimeMillis());
+                member.setLockCount(0);
+                member.setLockType(false);
+
+                save(member);
+
+                log.info("MemberService ==> login ... [ " + member.getKey().getMember() + " : 登入成功 ]");
+                
+                return BusinessLayerResponse.ok(sessionManagementService.getTokenMember(member));
+            }
+        }
+        catch (Exception ex)
+        {
+            log.error("MemberService ==> login ... Exception : [" + ex + "]");
+            return BusinessLayerResponse.error("會員登入失敗！");
+        }
+    }
+
+    // 會員登出
+    public BusinessLayerResponse<String> logout(HttpServletRequest request, MemberUser member)
+    {
+        String byMember = member.getKey().getMember();
+
+        MemberUser memberUser = findByMember(byMember);
+        
+        if (memberUser == null)
+        {
+            log.info("MemberService ==> logout ... 查無此會員 : [" + byMember + "]");
+            
+            return BusinessLayerResponse.error("會員登出失敗");
+        }
+        try
+        {
+            sessionManagementService.removeLoggedUser(request, "member_" + byMember, 1);
+            log.info("MemberService ==> logout ... 會員 : [" + byMember + "] 登出成功");
+            
+            return BusinessLayerResponse.ok("會員登出成功");
+        }
+        catch (Exception ex)
+        {
+            log.error("MemberService ==> logout ... Exception : [" + ex + "]");
+            
+            return BusinessLayerResponse.error("會員登出失敗");
         }
     }
 }

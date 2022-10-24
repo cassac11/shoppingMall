@@ -8,7 +8,7 @@ import shoppingmall.entity.AdminUser;
 import shoppingmall.utils.BusinessLayerResponse;
 import shoppingmall.utils.CommUtils;
 import shoppingmall.utils.EnDecoderUtil;
-import shoppingmall.vo.BackstageLoginVo;
+import shoppingmall.vo.BackstageLoginVO;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -23,7 +23,7 @@ public class OperationService {
     private SessionManagementService sessionManagementService;
     
     // 後台登入
-    public BusinessLayerResponse<String> getToken(HttpServletRequest request, BackstageLoginVo backstageLoginVo)
+    public BusinessLayerResponse<String> getToken(HttpServletRequest request, BackstageLoginVO backstageLoginVo)
     {
         if (!StringUtils.hasText(backstageLoginVo.getName()))
             return BusinessLayerResponse.error("請輸入帳號");

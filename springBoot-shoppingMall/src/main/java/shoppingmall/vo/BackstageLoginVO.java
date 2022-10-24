@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @ApiModel
-public class BackstageLoginVo {
+public class BackstageLoginVO {
     
     /* 後台登入 */
     @ApiModelProperty(value = "用戶名", required = true)

@@ -62,6 +62,10 @@ public class MemberUser implements UserDetails {
     private String lastLoginIP;
     private Long lastLoginTime;
 
+    private Integer lockCount; // 登入次數
+    private Long tempLockTime; // 暫時鎖帳時間
+    private Boolean lockType;
+    
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());

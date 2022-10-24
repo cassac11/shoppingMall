@@ -130,6 +130,13 @@ public class SessionManagementService implements AuthenticationProvider {
 		refreshTokenTimeAdmin(key, u);
 		return key;
 	}
+
+	public String getTokenMember(MemberUser u)
+	{
+		String key = UUID.randomUUID().toString();
+		refreshTokenTimeMember(key, u);
+		return key;
+	}
 	
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException 
@@ -190,6 +197,33 @@ public class SessionManagementService implements AuthenticationProvider {
 			userIndex.add(key);
 		
 		userIndexMap.put("admin-" + u.getUsername(), userIndex);
+	}
+
+	private void refreshTokenTimeMember(String key, MemberUser u)
+	{
+		long current = System.currentTimeMillis();
+		u.getInfo().put("refresh", Long.toString(current));
+
+		SessionVO session = sessionMap.get(key);
+
+		if (session == null)
+			session = new SessionVO();
+
+		session.setMemberUser(u);
+		session.setToken(key);
+		sessionMap.put(key, session);
+
+		Set<String> userIndex = userIndexMap.get("member_" + u.getKey().getMember());
+		
+		if (userIndex == null)
+		{
+			userIndex = new HashSet<>();
+			userIndex.add(key);
+		}
+		else
+			userIndex.add(key);
+		
+		userIndexMap.put("member_" + u.getKey().getMember(), userIndex);
 	}
 	
 	@Override

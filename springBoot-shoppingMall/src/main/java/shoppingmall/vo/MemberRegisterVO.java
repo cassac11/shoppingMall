@@ -27,6 +27,6 @@ public class MemberRegisterVO {
 	@ApiModelProperty(value = "區域碼", required = true, example = "886")
 	private String areaCode;
 
-	@ApiModelProperty(value = "性別", required = true)
+	@ApiModelProperty(value = "性別")
 	private Integer sex;
 }
